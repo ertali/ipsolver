@@ -3,8 +3,26 @@
     <head>
         <meta charset="UTF-8" />
         <title>My Yew App</title>
-        <link rel="stylesheet" href="/app-cff16bf5dafc62b9.css" integrity="sha384&#x2D;JL9Foa2GQqc3huaoS7kuy5KqUvaR70Ji7DGNNK4vEwdgE1Gq06SlhL51VsjV9DXT"/>
-    <link rel="modulepreload" href="/ipsolver-763f732da114b520.js" crossorigin=anonymous integrity="sha384-3TFeEnCywCH5MgK0SCueSbguonv0/+evxgpqOpSmKB20HlkRrtKLlK8b1tlQeY5z"><link rel="preload" href="/ipsolver-763f732da114b520_bg.wasm" crossorigin=anonymous integrity="sha384-Ky3owOU76mfdvRizsc/2nO4OUUL4WtildlutMhfs3hPzv6faHvZB6Ghpg1RF/2d8" as="fetch" type="application/wasm"></head>
+        <link
+            rel="stylesheet"
+            href="/app-cff16bf5dafc62b9.css"
+            integrity="sha384&#x2D;JL9Foa2GQqc3huaoS7kuy5KqUvaR70Ji7DGNNK4vEwdgE1Gq06SlhL51VsjV9DXT"
+        />
+        <link
+            rel="modulepreload"
+            href="/ipsolver-763f732da114b520.js"
+            crossorigin="anonymous"
+            integrity="sha384-3TFeEnCywCH5MgK0SCueSbguonv0/+evxgpqOpSmKB20HlkRrtKLlK8b1tlQeY5z"
+        />
+        <link
+            rel="preload"
+            href="/ipsolver-763f732da114b520_bg.wasm"
+            crossorigin="anonymous"
+            integrity="sha384-Ky3owOU76mfdvRizsc/2nO4OUUL4WtildlutMhfs3hPzv6faHvZB6Ghpg1RF/2d8"
+            as="fetch"
+            type="application/wasm"
+        />
+    </head>
     <body>
         <!-- Container where Yew will mount the application -->
         <div id="root"></div>
@@ -27,16 +45,20 @@
 
             main();
         </script>
-    
-<script type="module" nonce="g6bnmiImWXxek6ukOutUig==">
-import init, * as bindings from '/ipsolver-763f732da114b520.js';
-const wasm = await init({ module_or_path: '/ipsolver-763f732da114b520_bg.wasm' });
 
+        <script type="module" nonce="g6bnmiImWXxek6ukOutUig==">
+            import init, * as bindings from "/ipsolver-763f732da114b520.js";
+            const wasm = await init({
+                module_or_path: "/ipsolver-763f732da114b520_bg.wasm",
+            });
 
-window.wasmBindings = bindings;
+            window.wasmBindings = bindings;
 
-
-dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
-
-</script></body>
+            dispatchEvent(
+                new CustomEvent("TrunkApplicationStarted", {
+                    detail: { wasm },
+                }),
+            );
+        </script>
+    </body>
 </html>
