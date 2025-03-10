@@ -12,7 +12,6 @@ pub fn run_app() -> Result<(), JsValue> {
 }
 
 fn main() {
-    // For local dev (wasm-pack test, etc.)
     wasm_logger::init(wasm_logger::Config::default());
     Renderer::<components::App>::new().render();
 }

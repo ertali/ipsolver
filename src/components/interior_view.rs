@@ -2,13 +2,10 @@ use crate::interior::InteriorPointIteration;
 use nalgebra::{DMatrix, DVector};
 use yew::prelude::*;
 
-/// The component’s props
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    /// Which iteration index are we displaying (0, 1, 2, ...).
     pub iteration: usize,
 
-    /// The current iteration data from the solver. If None, we display placeholders.
     #[prop_or_default]
     pub iteration_data: Option<InteriorPointIteration>,
 }
@@ -31,7 +28,6 @@ impl Component for InteriorPointView {
         let props = ctx.props();
         let it = props.iteration_data.as_ref();
 
-        // Pull the matrices/vectors out of the iteration data (if any)
         let d_matrix = it.map(|iter| &iter.d_matrix);
         let a_tilde = it.map(|iter| &iter.a_tilde_matrix);
         let c_tilde = it.map(|iter| &iter.c_tilde_vector);

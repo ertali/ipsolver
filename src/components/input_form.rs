@@ -4,7 +4,6 @@ use yew::prelude::*;
 
 #[derive(Clone)]
 pub enum InputFormData {
-    // We only keep the InteriorPointInput. The other variants are removed.
     InteriorPointInput(
         DMatrix<f64>,
         DVector<f64>,
@@ -19,7 +18,6 @@ pub enum InputFormData {
 pub struct Props {
     pub on_submit: Callback<InputFormData>,
     pub on_size_change: Callback<(usize, usize)>,
-    /// We can keep a max_variables limit
     #[prop_or(10)]
     pub max_variables: usize,
 }
@@ -28,18 +26,14 @@ pub struct InputForm {
     variables: usize,
     constraints: usize,
 
-    // The user’s objective function coefficients
     objective_coeffs: Vec<f64>,
 
-    // The user’s constraint coefficients, signs, and RHS
     constraint_coeffs: Vec<Vec<f64>>,
     constraint_signs: Vec<String>,
     rhs_values: Vec<f64>,
 
-    // Are we maximizing or minimizing?
     maximization: bool,
 
-    // Interior point config
     alpha: f64,
     initial_feasible: Vec<f64>,
 }
@@ -136,10 +130,8 @@ impl Component for InputForm {
                 }
             }
             Msg::Submit => {
-                // On submit, we build (A, b, c) from the user input
                 let (a, b, c) = self.create_matrix_form();
                 let signs = self.constraint_signs.clone();
-                // Then pass them up as InteriorPointInput
                 let data = InputFormData::InteriorPointInput(
                     a,
                     b,
@@ -159,7 +151,6 @@ impl Component for InputForm {
 
         html! {
             <div class="input-form">
-                // The Min/Max select
                 <div class="optimization-type">
                     <select
                         value={if self.maximization { "max" } else { "min" }}
@@ -172,7 +163,6 @@ impl Component for InputForm {
                     <span>{" Z = "}</span>
                 </div>
 
-                // The "variables" and "constraints" numeric inputs
                 <div class="size-selectors">
                     <div>
                         <label>{"Variables: "}
@@ -204,7 +194,6 @@ impl Component for InputForm {
                     </div>
                 </div>
 
-                // The objective function input
                 <div class="objective-function">
                 {
                     for (0..self.variables).map(|j| {
@@ -230,7 +219,6 @@ impl Component for InputForm {
                 }
                 </div>
 
-                // The constraints
                 <div class="constraints">
                                     {
                                         for (0..self.constraints).map(|i| {
@@ -277,7 +265,6 @@ impl Component for InputForm {
                                     }
                                 </div>
 
-                // The interior-point-specific alpha and initial point
                 <div class="alpha-selector">
                     <label>{"Step Size (α): "}
                         <input
@@ -328,7 +315,6 @@ impl Component for InputForm {
 }
 
 impl InputForm {
-    /// Re-sizes the internal vectors if `variables` or `constraints` changed
     fn resize(&mut self) {
         self.objective_coeffs.resize(self.variables, 0.0);
 
@@ -341,13 +327,9 @@ impl InputForm {
             .resize(self.constraints, "<=".to_string());
         self.rhs_values.resize(self.constraints, 0.0);
 
-        // Also re-size the initial feasible guess
         self.initial_feasible.resize(self.variables, 1.0);
     }
 
-    /// Build the user-specified A, b, c in their raw form:
-    ///   A = [constraint_coeffs], b = rhs_values, c = objective_coeffs
-    /// Then we'll do further standardization in the parent if needed.
     fn create_matrix_form(&self) -> (DMatrix<f64>, DVector<f64>, DVector<f64>) {
         let m = self.constraints;
         let n = self.variables;
@@ -360,10 +342,6 @@ impl InputForm {
         }
         let a_matrix = DMatrix::from_row_slice(m, n, &a_data);
         let b_vector = DVector::from_iterator(m, self.rhs_values.iter().cloned());
-
-        // If maximizing, we keep c as typed; if minimizing, we might multiply by -1,
-        // but we actually do that inside `standardize_problem`.
-        // So here, just pass them as typed:
         let c_vector = DVector::from_vec(self.objective_coeffs.clone());
 
         (a_matrix, b_vector, c_vector)

@@ -7,28 +7,21 @@ use crate::interior::{
     InteriorPointProblem,
 };
 
-// Import the two child components
 mod input_form;
 mod interior_view;
 
 use input_form::{InputForm, InputFormData};
 use interior_view::InteriorPointView;
 
-/// The main (only) solver “mode” we support now.
 pub struct App {
-    // How many variables / constraints the user typed
     problem_size: Option<(usize, usize)>,
 
-    // We'll store the interior‐point “problem” once the user presses “Solve.”
     current_problem: Option<InteriorPointProblem>,
 
-    // We keep track of each iteration's data for display
     interior_iterations: Vec<InteriorPointIteration>,
 
-    // For convenience, store whether user wants to maximize or not
     maximize: bool,
 
-    // Keep track if we've encountered an error or are “done.”
     done: bool,
 }
 
@@ -80,7 +73,6 @@ impl Component for App {
                 initial,
                 maximize,
             } => {
-                // Log the raw user input
                 log::info!("User pressed 'Solve' with:");
                 log::info!("  A = {:?}", a);
                 log::info!("  b = {:?}", b);
@@ -99,7 +91,6 @@ impl Component for App {
                     DVector::from_element(n, 1.0)
                 };
 
-                // Create the interior point problem
                 let problem = InteriorPointProblem {
                     a_matrix: a,
                     b_vector: b,
@@ -131,7 +122,6 @@ impl Component for App {
 
                     match perform_interior_point_iteration(problem) {
                         Ok(iter_data) => {
-                            // Log the iteration data so you can see the results
                             log::info!(
                                 "Iteration snapshot => D = diag(x) =>\n{:?}",
                                 iter_data.d_matrix
@@ -185,12 +175,10 @@ impl Component for App {
                 <h1>{ "Interior-Point Solver" }</h1>
 
                 <div>
-                    // “Reset” button
                     <button class="back-button" onclick={link.callback(|_| Msg::Reset)}>
                         { "Reset / Clear" }
                     </button>
 
-                    // The input form:
                     <InputForm
                         on_submit={
                             link.callback(
@@ -200,7 +188,6 @@ impl Component for App {
                                             a, b, c, alpha, initial, maximize
                                         }
                                     }
-                                    // We removed the other solver variants, so if they appear, ignore them:
                                     _ => Msg::Reset,
                                 }
                             )
@@ -208,16 +195,13 @@ impl Component for App {
                         on_size_change={link.callback(|(vars, cons)| Msg::SetProblemSize(vars, cons))}
                     />
 
-                    // Next iteration
                     <button class="next-step-button" onclick={link.callback(|_| Msg::NextStep)}>
                         { "Next Interior-Point Step" }
                     </button>
                 </div>
 
-                // If we have an interior-point problem, show the iteration snapshots
                 {
                     if let Some(_prob) = &self.current_problem {
-                        // Show all iteration snapshots
                         html! {
                             <div class="iterations">
                                 {
