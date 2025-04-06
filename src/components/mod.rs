@@ -73,23 +73,22 @@ impl Component for App {
                 initial,
                 maximize,
             } => {
-                log::info!("User pressed 'Solve' with:");
-                log::info!("  A = {:?}", a);
-                log::info!("  b = {:?}", b);
-                log::info!("  c = {:?}", c);
-                log::info!("  alpha = {}", alpha);
-                log::info!("  initial = {:?}", initial);
-                log::info!("  maximize = {}", maximize);
+                let final_n = a.ncols();
+
+                let feasible_x = if initial.len() == final_n {
+                    DVector::from_vec(initial.clone())
+                } else {
+                    let mut new_init = vec![1.0; final_n];
+                    for (i, val) in initial.iter().enumerate() {
+                        if i < final_n {
+                            new_init[i] = val.max(1e-4);
+                        }
+                    }
+                    DVector::from_vec(new_init)
+                };
 
                 let sign = if maximize { 1.0 } else { -1.0 };
                 let new_c = c.map(|val| val * sign);
-                let n = a.ncols();
-
-                let feasible_x = if initial.len() == n {
-                    DVector::from_vec(initial.clone())
-                } else {
-                    DVector::from_element(n, 1.0)
-                };
 
                 let problem = InteriorPointProblem {
                     a_matrix: a,
@@ -98,12 +97,14 @@ impl Component for App {
                     x_vector: feasible_x,
                     alpha,
                     constraint_types: vec![],
+                    is_augmented: false,
                 };
 
                 self.current_problem = Some(problem);
                 self.interior_iterations.clear();
                 self.done = false;
                 self.maximize = maximize;
+
                 true
             }
             Msg::NextStep => {
@@ -183,7 +184,7 @@ impl Component for App {
                         on_submit={
                             link.callback(
                                 |input: InputFormData| match input {
-                                    InputFormData::InteriorPointInput(a, b, c, alpha, initial, maximize) => {
+                                    InputFormData::InteriorPointInput(a, b, c, alpha, initial, maximize, is_augmented) => {
                                         Msg::StartInteriorPoint {
                                             a, b, c, alpha, initial, maximize
                                         }

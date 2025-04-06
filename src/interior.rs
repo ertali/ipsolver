@@ -17,6 +17,7 @@ pub struct InteriorPointProblem {
     pub x_vector: DVector<f64>,
     pub alpha: f64,
     pub constraint_types: Vec<String>,
+    pub is_augmented: bool,
 }
 
 #[derive(Debug)]
