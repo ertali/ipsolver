@@ -2,35 +2,11 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>My Yew App</title>
-        <link rel="stylesheet" href="/app-cff16bf5dafc62b9.css" integrity="sha384&#x2D;JL9Foa2GQqc3huaoS7kuy5KqUvaR70Ji7DGNNK4vEwdgE1Gq06SlhL51VsjV9DXT"/>
-    <link rel="modulepreload" href="/ipsolver-f085370818612ae4.js" crossorigin=anonymous integrity="sha384-aOUkxqReW17SQvAk2Y/gdeUazUOjJFPqH9yCet6DaXkh085q46055KWNNi/QmjK5"><link rel="preload" href="/ipsolver-f085370818612ae4_bg.wasm" crossorigin=anonymous integrity="sha384-h81Bv+PSmewXZBdy7J7prXH0IIgqIvT1Ut/aUUZLSxlO5iNsdMzGPibaEaL8s4PS" as="fetch" type="application/wasm"></head>
-    <body>
-        <!-- Container where Yew will mount the application -->
-        <div id="root"></div>
-
-        <!--
-      The script below does the following:
-       1) Imports the generated WebAssembly JavaScript wrapper
-       2) Waits for the WASM to initialize
-       3) Calls `run_app()` (or whatever your entry function is)
-    -->
-        <script type="module">
-            import init, { run_app } from "./pkg/my_project.js";
-
-            async function main() {
-                // Initialize the WASM module
-                await init();
-                // Invoke the Yew entry function (from your Rust code)
-                run_app();
-            }
-
-            main();
-        </script>
-    
-<script type="module" nonce="qv0cwJAUGg/zsYxMJlZuPQ==">
-import init, * as bindings from '/ipsolver-f085370818612ae4.js';
-const wasm = await init({ module_or_path: '/ipsolver-f085370818612ae4_bg.wasm' });
+        <title>Interior-Point Solver</title>
+        
+<script type="module" nonce="Zin5DWssft4yYwcX2Tdn5Q==">
+import init, * as bindings from '/ipsolver-28f05565fdfe142a.js';
+const wasm = await init({ module_or_path: '/ipsolver-28f05565fdfe142a_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -38,7 +14,12 @@ window.wasmBindings = bindings;
 
 dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
 
-</script><script>"use strict";
+</script>
+        <link rel="stylesheet" href="/app-eb683e032d8869a5.css" integrity="sha384&#x2D;fR9U9PeCzl7zGmRxg7L9QNt3i2gnRMZCLOZZ&#x2F;eAZNtRmoilB2Yiu8&#x2B;Kb&#x2F;YOhRTO6"/>
+    <link rel="modulepreload" href="/ipsolver-28f05565fdfe142a.js" crossorigin=anonymous integrity="sha384-MBSa3UqcE4iT5p2LumPvz7HCPX9fOYvy0qf+MxkEksDF7kY6juFVB9UlfLvxK9pC"><link rel="preload" href="/ipsolver-28f05565fdfe142a_bg.wasm" crossorigin=anonymous integrity="sha384-vU9zMhsEI+XIO5xR1s8SbK0pQsuH6osMZ59/HYE+KQXm87A6ixEvFNnetzcNc1pH" as="fetch" type="application/wasm"></head>
+    <body>
+        <div id="root"></div>
+    <script>"use strict";
 
 (function () {
 
