@@ -23,6 +23,8 @@ pub struct App {
     maximize: bool,
 
     done: bool,
+
+    error_message: Option<String>,
 }
 
 pub enum Msg {
@@ -51,6 +53,7 @@ impl Component for App {
             interior_iterations: vec![],
             maximize: true, // default
             done: false,
+            error_message: None,
         }
     }
 
@@ -104,6 +107,28 @@ impl Component for App {
                 self.interior_iterations.clear();
                 self.done = false;
                 self.maximize = maximize;
+                self.error_message = None; // Clear any previous errors
+
+                // Automatically perform the first iteration (Iteration 0)
+                if let Some(problem) = &mut self.current_problem {
+                    match perform_interior_point_iteration(problem) {
+                        Ok(iter_data) => {
+                            self.interior_iterations.push(iter_data);
+                        }
+                        Err(InteriorPointError::NoImprovement) => {
+                            self.done = true;
+                            self.error_message = Some("The algorithm converged immediately or found no improvement direction. This might indicate the initial point is already optimal, or the problem constraints are inconsistent.".to_string());
+                        }
+                        Err(InteriorPointError::NotFeasible) => {
+                            self.done = true;
+                            self.error_message = Some("The problem appears to be infeasible. Please check your constraints and initial point to ensure they form a valid feasible region.".to_string());
+                        }
+                        Err(InteriorPointError::SingularMatrix(msg)) => {
+                            self.done = true;
+                            self.error_message = Some(format!("Mathematical error: {}. This usually means the constraint matrix is ill-conditioned or the problem is degenerate. Try adjusting your constraints or initial point.", msg));
+                        }
+                    }
+                }
 
                 true
             }
@@ -157,6 +182,7 @@ impl Component for App {
                 self.current_problem = None;
                 self.interior_iterations.clear();
                 self.done = false;
+                self.error_message = None;
                 true
             }
             Msg::SetInitialPoint(x) => {
@@ -202,7 +228,27 @@ impl Component for App {
                 </div>
 
                 {
-                    if let Some(_prob) = &self.current_problem {
+                    if let Some(error) = &self.error_message {
+                        html! {
+                            <div class="error-message">
+                                <div class="error-icon">{ "⚠️" }</div>
+                                <h3>{ "Problem Detected" }</h3>
+                                <p>{ error }</p>
+                                <div class="error-actions">
+                                    <p><strong>{ "What to try:" }</strong></p>
+                                    <ul>
+                                        <li>{ "Check that your constraints are consistent and don't contradict each other" }</li>
+                                        <li>{ "Ensure your initial point satisfies all constraints and is positive" }</li>
+                                        <li>{ "Verify your constraint matrix is well-formed" }</li>
+                                        <li>{ "Try different initial values or adjust the step size (α)" }</li>
+                                    </ul>
+                                    <button onclick={link.callback(|_| Msg::Reset)}>
+                                        { "← Go Back and Try Again" }
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    } else if let Some(_prob) = &self.current_problem {
                         html! {
                             <div class="iterations">
                                 {
@@ -219,7 +265,11 @@ impl Component for App {
                         }
                     } else {
                         html! {
-                            <p>{ "No interior-point problem started yet." }</p>
+                            <div class="no-problem-message">
+                                <div class="message-icon">{ "📊" }</div>
+                                <h3>{ "Ready to Solve" }</h3>
+                                <p>{ "Configure your linear programming problem above and press \"Solve\" to begin the interior-point algorithm visualization." }</p>
+                            </div>
                         }
                     }
                 }

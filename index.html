@@ -2,30 +2,11 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>My Yew App</title>
+        <title>Interior-Point Solver</title>
+        <link data-trunk rel="rust" />
         <link data-trunk rel="css" href="src/styles/app.css" />
     </head>
     <body>
-        <!-- Container where Yew will mount the application -->
         <div id="root"></div>
-
-        <!--
-      The script below does the following:
-       1) Imports the generated WebAssembly JavaScript wrapper
-       2) Waits for the WASM to initialize
-       3) Calls `run_app()` (or whatever your entry function is)
-    -->
-        <script type="module">
-            import init, { run_app } from "./pkg/my_project.js";
-
-            async function main() {
-                // Initialize the WASM module
-                await init();
-                // Invoke the Yew entry function (from your Rust code)
-                run_app();
-            }
-
-            main();
-        </script>
     </body>
 </html>

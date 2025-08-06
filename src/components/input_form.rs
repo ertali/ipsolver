@@ -137,13 +137,31 @@ impl Component for InputForm {
             }
             Msg::Submit => {
                 let (a, b, c) = self.create_matrix_form();
-                let signs = self.constraint_signs.clone();
+                
+                // Prepare initial feasible point based on mode
+                let initial_point = if self.augmented_model {
+                    // Already augmented - use user input as is
+                    self.initial_feasible.clone()
+                } else {
+                    // Auto-augment mode - extend initial point for slack variables
+                    let slack_count = self.constraint_signs.iter()
+                        .filter(|&sign| sign == "<=" || sign == ">=")
+                        .count();
+                    
+                    let mut extended_initial = self.initial_feasible.clone();
+                    // Add positive initial values for slack variables
+                    for _ in 0..slack_count {
+                        extended_initial.push(1.0);
+                    }
+                    extended_initial
+                };
+                
                 let data = InputFormData::InteriorPointInput(
                     a,
                     b,
                     c,
                     self.alpha,
-                    self.initial_feasible.clone(),
+                    initial_point,
                     self.maximization,
                     self.augmented_model,
                 );
@@ -152,6 +170,19 @@ impl Component for InputForm {
             }
             Msg::SetAugmentedModel(val) => {
                 self.augmented_model = val;
+                // When switching to augmented mode, set all constraint signs to "="
+                if val {
+                    for i in 0..self.constraint_signs.len() {
+                        self.constraint_signs[i] = "=".to_string();
+                    }
+                } else {
+                    // When switching back to auto-augment, ensure signs are not "="
+                    for i in 0..self.constraint_signs.len() {
+                        if self.constraint_signs[i] == "=" {
+                            self.constraint_signs[i] = "<=".to_string();
+                        }
+                    }
+                }
                 true
             }
             Msg::UpdateConstraintSign(i, sign) => {
@@ -289,15 +320,17 @@ impl Component for InputForm {
                                                     }
                                                     // Insert your sign dropdown here:
                                                     <select
+                                                        key={format!("constraint-{}-{}", i, self.augmented_model)}
                                                         value={self.constraint_signs[i].clone()}
+                                                        disabled={self.augmented_model}
                                                         oninput={link.callback(move |e: InputEvent| {
                                                             let select: HtmlSelectElement = e.target_unchecked_into();
                                                             Msg::UpdateConstraintSign(i, select.value())
                                                         })}
                                                     >
                                                         <option value="<=">{"<="}</option>
-                                                        <option value="=">{"="}</option>
                                                         <option value=">=">{">="}</option>
+                                                        <option value="=">{"="}</option>
                                                     </select>
                                                     <input
                                                         type="number"
@@ -372,8 +405,9 @@ impl InputForm {
         for row in self.constraint_coeffs.iter_mut() {
             row.resize(self.variables, 0.0);
         }
+        let default_sign = if self.augmented_model { "=".to_string() } else { "<=".to_string() };
         self.constraint_signs
-            .resize(self.constraints, "<=".to_string());
+            .resize(self.constraints, default_sign);
         self.rhs_values.resize(self.constraints, 0.0);
 
         self.initial_feasible.resize(self.variables, 1.0);
@@ -381,6 +415,7 @@ impl InputForm {
 
     fn create_matrix_form(&self) -> (DMatrix<f64>, DVector<f64>, DVector<f64>) {
         if self.augmented_model {
+            // Already augmented - just create matrices directly
             let m = self.constraints;
             let n = self.variables;
 
@@ -398,90 +433,59 @@ impl InputForm {
 
             (a_matrix, b_vector, c_vector)
         } else {
+            // Auto-augment: convert inequalities to equalities by adding slack variables
             let m = self.constraints;
-            let mut slack_count = 0;
-
-            let mut big_a_data: Vec<f64> = Vec::new();
-            let mut big_b_data: Vec<f64> = Vec::new();
-
+            
+            // Count how many slack variables we need
+            let slack_count = self.constraint_signs.iter()
+                .filter(|&sign| sign == "<=" || sign == ">=")
+                .count();
+            
+            let n = self.variables + slack_count;
+            
+            // Build the augmented matrix A and vector b
+            let mut a_data = Vec::with_capacity(m * n);
+            let mut b_data = Vec::with_capacity(m);
+            
+            let mut slack_index = 0;
+            
             for i in 0..m {
                 let sign = &self.constraint_signs[i];
-                let mut multiplier = 1.0;
-                if sign == ">=" {
-                    multiplier = -1.0;
-                }
-
-                let mut row_data = Vec::with_capacity(self.variables);
+                
+                // Determine multiplier for >= constraints
+                let multiplier = if sign == ">=" { -1.0 } else { 1.0 };
+                
+                // Add original variable coefficients
                 for j in 0..self.variables {
-                    row_data.push(multiplier * self.constraint_coeffs[i][j]);
+                    a_data.push(multiplier * self.constraint_coeffs[i][j]);
                 }
-
+                
+                // Add slack variable coefficients
+                for s in 0..slack_count {
+                    if (sign == "<=" || sign == ">=") && s == slack_index {
+                        a_data.push(1.0);  // This slack variable belongs to this constraint
+                    } else {
+                        a_data.push(0.0);  // Other slack variables are 0 for this constraint
+                    }
+                }
+                
+                // Advance slack index if we used a slack variable
                 if sign == "<=" || sign == ">=" {
-                    row_data.push(1.0);
-                    slack_count += 1;
+                    slack_index += 1;
                 }
+                
+                // Add RHS value
+                b_data.push(multiplier * self.rhs_values[i]);
             }
-
-            let mut needed_slacks = 0;
-            for i in 0..m {
-                let sign = &self.constraint_signs[i];
-                if sign == "<=" || sign == ">=" {
-                    needed_slacks += 1;
-                }
-            }
-
-            let mut all_rows: Vec<Vec<f64>> = Vec::with_capacity(m);
-
-            for i in 0..m {
-                let sign = &self.constraint_signs[i];
-                let mut multiplier = 1.0;
-                if sign == ">=" {
-                    multiplier = -1.0;
-                }
-
-                let mut row_data = Vec::with_capacity(self.variables + needed_slacks);
-                for j in 0..self.variables {
-                    row_data.push(multiplier * self.constraint_coeffs[i][j]);
-                }
-
-                for _ in 0..needed_slacks {
-                    row_data.push(0.0);
-                }
-
-                if sign == "<=" || sign == ">=" {
-                    let slack_index_for_this_row = {
-                        let mut count_before = 0;
-                        for r in 0..i {
-                            let s = &self.constraint_signs[r];
-                            if s == "<=" || s == ">=" {
-                                count_before += 1;
-                            }
-                        }
-                        count_before
-                    };
-                    row_data[self.variables + slack_index_for_this_row] = 1.0;
-                }
-
-                all_rows.push(row_data);
-
-                let rhs_val = multiplier * self.rhs_values[i];
-                big_b_data.push(rhs_val);
-            }
-
-            let m = self.constraints;
-            let n = self.variables + needed_slacks;
-            let mut big_a_data = Vec::with_capacity(m * n);
-            for row_vec in all_rows {
-                big_a_data.extend_from_slice(&row_vec);
-            }
-
-            let a_matrix = DMatrix::from_row_slice(m, n, &big_a_data);
-            let b_vector = DVector::from_iterator(m, big_b_data.into_iter());
-
+            
+            let a_matrix = DMatrix::from_row_slice(m, n, &a_data);
+            let b_vector = DVector::from_vec(b_data);
+            
+            // Extend objective function with zeros for slack variables
             let mut c_vec = self.objective_coeffs.clone();
             c_vec.resize(n, 0.0);
             let c_vector = DVector::from_vec(c_vec);
-
+            
             (a_matrix, b_vector, c_vector)
         }
     }
